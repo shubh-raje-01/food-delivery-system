@@ -3,6 +3,7 @@ package com.food_delivery_system.auth_service.dto.request;
 import com.food_delivery_system.auth_service.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +22,7 @@ public class LoginRequest {
     @NotBlank
     private String password;
 
+    @NotNull
     private Role role;
 
 }
