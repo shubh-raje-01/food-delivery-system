@@ -69,30 +69,41 @@ public class AuthService {
 
         issueVerificationToken(user);
 
+        log.info("User registered: email={}, role={}", user.getEmail(), user.getRole());
+
         return userMapper.toResponse(user);
     }
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+                .orElseThrow(() -> {
+                    log.warn("Login failed: no account for email={}", request.getEmail());
+                    return new InvalidCredentialsException("Invalid email or password");
+                });
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            log.warn("Login failed: bad password for email={}", user.getEmail());
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
         if (!user.isEnabled()) {
+            log.warn("Login blocked: account disabled for email={}", user.getEmail());
             throw new AccountDisabledException("This account has been disabled. Contact support for help.");
         }
 
         if (!user.isEmailVerified()) {
+            log.warn("Login blocked: email not verified for email={}", user.getEmail());
             throw new EmailNotVerifiedException("Please verify your email before logging in");
         }
 
         if (request.getRole() != null && request.getRole() != user.getRole()) {
+            log.warn("Login failed: role mismatch for email={}, requested={}, actual={}",
+                    user.getEmail(), request.getRole(), user.getRole());
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
+        log.info("Login successful: email={}", user.getEmail());
         return issueTokens(user);
     }
 
@@ -104,16 +115,19 @@ public class AuthService {
                 .orElseThrow(() -> new InvalidTokenException("Refresh token is invalid or expired"));
 
         if (!user.isEnabled()) {
+            log.warn("Token refresh blocked: account disabled for email={}", user.getEmail());
             throw new AccountDisabledException("This account has been disabled. Contact support for help.");
         }
 
         refreshTokenService.revoke(stored);
+        log.info("Token refreshed: email={}", user.getEmail());
         return issueTokens(user);
     }
 
     @Transactional
     public void logout(RefreshTokenRequest request) {
         refreshTokenService.revokeByRawToken(request.getRefreshToken());
+        log.info("User logged out");
     }
 
     @Transactional
@@ -133,6 +147,7 @@ public class AuthService {
         userRepository.save(user);
 
         refreshTokenService.revokeAllForSubject(user.getEmail());
+        log.info("Password changed: email={}", user.getEmail());
     }
 
     @Transactional
@@ -176,6 +191,7 @@ public class AuthService {
         passwordResetTokenRepository.save(token);
 
         refreshTokenService.revokeAllForSubject(user.getEmail());
+        log.info("Password reset via token: email={}", user.getEmail());
     }
 
     @Transactional
@@ -195,6 +211,7 @@ public class AuthService {
 
         token.setUsed(true);
         verificationTokenRepository.save(token);
+        log.info("Email verified: email={}", user.getEmail());
     }
 
     @Transactional

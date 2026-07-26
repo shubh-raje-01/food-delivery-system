@@ -41,7 +41,14 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshToken validate(String rawToken) {
-        if (!jwtService.isRefreshToken(rawToken) || jwtService.isTokenExpired(rawToken)) {
+        boolean isValidRefreshToken;
+        try {
+            isValidRefreshToken = jwtService.isRefreshToken(rawToken) && !jwtService.isTokenExpired(rawToken);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new InvalidTokenException("Refresh token is invalid or expired");
+        }
+
+        if (!isValidRefreshToken) {
             throw new InvalidTokenException("Refresh token is invalid or expired");
         }
 

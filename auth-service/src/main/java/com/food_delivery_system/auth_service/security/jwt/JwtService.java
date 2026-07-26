@@ -1,8 +1,11 @@
 package com.food_delivery_system.auth_service.security.jwt;
 
-
 import com.food_delivery_system.auth_service.security.service.CustomUserDetails;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,15 +28,21 @@ public class JwtService {
     private final SecretKey signingKey;
     private final long accessTokenExpirationMs;
     private final long refreshTokenExpirationMs;
+    private final String issuer;
+    private final String audience;
 
     public JwtService(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-token-expiration-ms}") long accessTokenExpirationMs,
-            @Value("${jwt.refresh-token-expiration-ms}") long refreshTokenExpirationMs
+            @Value("${jwt.refresh-token-expiration-ms}") long refreshTokenExpirationMs,
+            @Value("${jwt.issuer}") String issuer,
+            @Value("${jwt.audience}") String audience
     ) {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes());
         this.accessTokenExpirationMs = accessTokenExpirationMs;
         this.refreshTokenExpirationMs = refreshTokenExpirationMs;
+        this.issuer = issuer;
+        this.audience = audience;
     }
 
     public GeneratedToken generateAccessToken(CustomUserDetails userDetails) {
@@ -43,6 +52,8 @@ public class JwtService {
 
         String token = Jwts.builder()
                 .setId(jti)
+                .setIssuer(issuer)
+                .setAudience(audience)
                 .setSubject(userDetails.getUsername())
                 .claim(CLAIM_UUID, userDetails.getUuid())
                 .claim(CLAIM_ROLE, userDetails.getUser().getRole().name())
@@ -62,6 +73,8 @@ public class JwtService {
 
         String token = Jwts.builder()
                 .setId(jti)
+                .setIssuer(issuer)
+                .setAudience(audience)
                 .setSubject(userDetails.getUsername())
                 .claim(CLAIM_ROLE, userDetails.getUser().getRole().name())
                 .claim(CLAIM_TYPE, TYPE_REFRESH)
@@ -124,11 +137,14 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
+        Claims claims = Jwts.parserBuilder()
                 .setSigningKey(signingKey)
+                .requireIssuer(issuer)
+                .requireAudience(audience)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+        return claims;
     }
 
 }

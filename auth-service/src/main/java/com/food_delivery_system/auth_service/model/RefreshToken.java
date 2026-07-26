@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
@@ -34,8 +36,13 @@ public class RefreshToken {
     @Column(nullable = false)
     private boolean revoked = false;
 
+    @CreationTimestamp
     @Column(nullable = false)
-    private Instant cratedAt = Instant.now();
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private Instant updatedAt;
 
     public RefreshToken(String jti, String subjectEmail, Role role, String tokenHash, Instant expiresAt) {
         this.jti = jti;
