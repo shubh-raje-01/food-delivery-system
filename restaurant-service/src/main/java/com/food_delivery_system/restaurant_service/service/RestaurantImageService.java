@@ -51,6 +51,7 @@ public class RestaurantImageService {
 
         RestaurantImage target = restaurantImageRepository.findById(imageId)
                 .orElseThrow(() -> new ResourceNotFoundException("Image not found: " + imageId));
+        assertBelongsToRestaurant(target, restaurant);
 
         clearExistingPrimary(restaurant.getId());
         target.setPrimary(true);
@@ -65,8 +66,15 @@ public class RestaurantImageService {
 
         RestaurantImage image = restaurantImageRepository.findById(imageId)
                 .orElseThrow(() -> new ResourceNotFoundException("Image not found: " + imageId));
+        assertBelongsToRestaurant(image, restaurant);
 
         restaurantImageRepository.delete(image);
+    }
+
+    private void assertBelongsToRestaurant(RestaurantImage image, Restaurant restaurant) {
+        if (!image.getRestaurant().getId().equals(restaurant.getId())) {
+            throw new ResourceNotFoundException("Image not found: " + image.getId());
+        }
     }
 
     private void clearExistingPrimary(Long restaurantId) {
