@@ -7,9 +7,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "food_categories", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"restaurant_uuid", "name"})
+        @UniqueConstraint(columnNames = {"uuid","restaurant_uuid", "name"})
 })
 @Getter
 @Setter
@@ -21,6 +23,10 @@ public class FoodCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, updatable = false)
+    @Builder.Default
+    private String uuid = UUID.randomUUID().toString();
 
     @Column(name = "restaurant_uuid", nullable = false)
     private String restaurantUuid;
